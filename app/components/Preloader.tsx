@@ -1,57 +1,39 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export default function Preloader() {
-  const [done, setDone] = useState(false);
-  const [hidden, setHidden] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const minTime = reduce ? 350 : 1050;
-    const started = performance.now();
-    let revealTimer: number | undefined;
-    let removeTimer: number | undefined;
-
-    const finish = () => {
-      const wait = Math.max(0, minTime - (performance.now() - started));
-      window.setTimeout(() => {
-        setDone(true);
-        removeTimer = window.setTimeout(() => setHidden(true), 850);
-      }, wait);
-    };
-
-    if (document.readyState === "complete") finish();
-    else {
-      const onLoad = () => finish();
-      window.addEventListener("load", onLoad, { once: true });
-      revealTimer = window.setTimeout(finish, 2200);
-      return () => {
-        window.removeEventListener("load", onLoad);
-        if (revealTimer) window.clearTimeout(revealTimer);
-        if (removeTimer) window.clearTimeout(removeTimer);
-      };
-    }
-
-    return () => {
-      if (revealTimer) window.clearTimeout(revealTimer);
-      if (removeTimer) window.clearTimeout(removeTimer);
-    };
+    const key = "bffs-preloader-seen";
+    if (sessionStorage.getItem(key)) return;
+    setVisible(true);
+    sessionStorage.setItem(key, "1");
+    const timer = window.setTimeout(() => setVisible(false), 1150);
+    return () => window.clearTimeout(timer);
   }, []);
 
-  if (hidden) return null;
-
   return (
-    <div className={`preloader ${done ? "is-done" : ""}`} aria-hidden="true">
-      <div className="preloader-orbit preloader-orbit-a" />
-      <div className="preloader-orbit preloader-orbit-b" />
-      <div className="preloader-center">
-        <img src="/logo.png" alt="" />
-        <div className="preloader-name">BRIGHT FUTURE</div>
-        <div className="preloader-sub">FOUNDATION OF AMERICA</div>
-      </div>
-      <div className="preloader-progress"><span /></div>
-      <div className="preloader-year">EST. 2006</div>
-    </div>
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="preloader"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.45, ease: [0.76, 0, 0.24, 1] }}
+          aria-hidden="true"
+        >
+          <div className="preloader-mark"><span>B</span><i /></div>
+          <div className="preloader-wordmark">
+            <strong>BRIGHT FUTURE</strong>
+            <small>FOUNDATION OF AMERICA</small>
+          </div>
+          <div className="preloader-line"><motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.9, ease: "easeInOut" }} /></div>
+          <small className="preloader-status">CREATING A BRIGHTER FUTURE</small>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
