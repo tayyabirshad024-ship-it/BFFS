@@ -1,34 +1,18 @@
- "use client";
+"use client";
 
-import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import type { ReactNode } from "react";
 
-export function Reveal({
-  children,
-  className = "",
-  delay = 0,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  delay?: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.style.setProperty("--delay", `${delay}ms`);
-          el.classList.add("in");
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.14 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [delay]);
-
-  return <div ref={ref} className={`reveal ${className}`}>{children}</div>;
+export function Reveal({ children, className = "", delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y: 42 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.18 }}
+      transition={{ duration: 0.8, delay: delay / 1000, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
 }
