@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export default function ScrollVideo() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -16,25 +19,24 @@ export default function ScrollVideo() {
     if (!section || !media || !video) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let locked = false, completed = false;
-    const lock = () => { locked = true; setWatching(true); document.body.classList.add("video-locked"); };
     const unlock = () => { locked = false; setWatching(false); document.body.classList.remove("video-locked"); };
+    const lock = () => { locked = true; setWatching(true); document.body.classList.add("video-locked"); };
     const finish = () => { completed = true; unlock(); window.scrollBy({ top: window.innerHeight * .72, behavior: "smooth" }); };
     const onTime = () => { if (video.duration) setProgress(video.currentTime / video.duration); };
     const onWheel = (e: WheelEvent) => {
       if (window.innerWidth < 800 || reduce || completed) return;
       const r = section.getBoundingClientRect();
       const nearTop = r.top > -12 && r.top < 20;
-      if (nearTop && e.deltaY > 0 && !locked) {
-        e.preventDefault(); lock(); video.currentTime = 0; video.loop = false;
-        video.play().catch(() => unlock());
-      } else if (locked && e.deltaY < 0) unlock();
+      if (nearTop && e.deltaY > 0 && !locked) { e.preventDefault(); lock(); video.currentTime = 0; video.loop = false; video.play().catch(unlock); }
+      else if (locked && e.deltaY < 0) unlock();
       else if (locked && e.deltaY > 0) e.preventDefault();
     };
-    const io = new IntersectionObserver(([entry]) => { if (!entry.isIntersecting && locked) unlock(); }, { threshold: .65 });
-    io.observe(section); video.addEventListener("timeupdate", onTime); video.addEventListener("ended", finish);
+    video.addEventListener("timeupdate", onTime); video.addEventListener("ended", finish);
     window.addEventListener("wheel", onWheel, { passive: false });
-    const intro = gsap.context(() => { gsap.fromTo(media, { scale: .58, borderRadius: 34 }, { scale: 1, borderRadius: 0, ease: "none", scrollTrigger: { trigger: section, start: "top top", end: "+=85%", scrub: 1 } }); }, section);
-    return () => { unlock(); io.disconnect(); video.removeEventListener("timeupdate", onTime); video.removeEventListener("ended", finish); window.removeEventListener("wheel", onWheel); intro.revert(); };
+    const ctx = gsap.context(() => {
+      gsap.fromTo(media, { scale: .58, borderRadius: 34 }, { scale: 1, borderRadius: 0, ease: "none", scrollTrigger: { trigger: section, start: "top top", end: "+=85%", scrub: 1 } });
+    }, section);
+    return () => { unlock(); video.removeEventListener("timeupdate", onTime); video.removeEventListener("ended", finish); window.removeEventListener("wheel", onWheel); ctx.revert(); };
   }, []);
 
   return <section ref={sectionRef} className="scroll-video-section section-dark" aria-label="Day of Beauty story">
