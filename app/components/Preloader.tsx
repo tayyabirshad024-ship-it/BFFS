@@ -1,39 +1,35 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export default function Preloader() {
   const [visible, setVisible] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const key = "bffs-preloader-seen";
-    if (sessionStorage.getItem(key)) return;
+    if (sessionStorage.getItem("bffs-preloader-seen")) return;
     setVisible(true);
-    sessionStorage.setItem(key, "1");
-    const timer = window.setTimeout(() => setVisible(false), 1150);
-    return () => window.clearTimeout(timer);
+    const finish = () => setReady(true);
+    if (document.readyState === "complete") finish();
+    else window.addEventListener("load", finish, { once: true });
+    const fallback = window.setTimeout(finish, 1200);
+    return () => { window.removeEventListener("load", finish); window.clearTimeout(fallback); };
   }, []);
 
-  return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          className="preloader"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.45, ease: [0.76, 0, 0.24, 1] }}
-          aria-hidden="true"
-        >
-          <div className="preloader-mark"><span>B</span><i /></div>
-          <div className="preloader-wordmark">
-            <strong>BRIGHT FUTURE</strong>
-            <small>FOUNDATION OF AMERICA</small>
-          </div>
-          <div className="preloader-line"><motion.span initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 0.9, ease: "easeInOut" }} /></div>
-          <small className="preloader-status">CREATING A BRIGHTER FUTURE</small>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+  useEffect(() => {
+    if (!ready || !visible) return;
+    const timer = window.setTimeout(() => {
+      sessionStorage.setItem("bffs-preloader-seen", "1");
+      setVisible(false);
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [ready, visible]);
+
+  return <AnimatePresence>{visible && <motion.div className="preloader" initial={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: .55, ease: [0.76,0,.24,1] }}>
+    <div className="preloader-mark"><img src="/logo.png" alt="" /><span /></div>
+    <div className="preloader-wordmark"><strong>BRIGHT FUTURE</strong><small>FOUNDATION OF AMERICA</small></div>
+    <div className="preloader-line"><motion.span initial={{ scaleX: 0 }} animate={{ scaleX: ready ? 1 : .72 }} transition={{ duration: .8, ease: "easeOut" }} /></div>
+    <small className="preloader-status">{ready ? "WELCOME" : "LOADING THE STORY"}</small>
+  </motion.div>}</AnimatePresence>;
 }
